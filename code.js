@@ -136,6 +136,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
     // ========================================================================
     // FUNÇÃO: Sincronizar TODAS as linhas com o número de membros
     // ========================================================================
@@ -176,7 +192,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    setupSetorLi
 
     // ========================================================================
     // ADICIONAR MEMBRO
@@ -511,7 +526,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } else {
             // cria estrutura padrão e salva
-            const defaultData = { members: ["Membro 1"], tasks: [{ name: "Tarefa 1", raci: ["-"] }] };
+            const defaultData = {
+                members: ["Membro 1"],
+                tasks: [{
+                    name: "Tarefa 1",
+                    raci: [{
+                        value: "-",
+                        classe: "circulo circulo-none"
+                    }]
+                }]
+            };
             renderMatrixFromData(defaultData);
             localStorage.setItem(storageKeyForSetor(id), JSON.stringify(defaultData));
         }
@@ -523,8 +547,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // gera id e adiciona listeners ao li (usado tanto para o setor padrão quanto para novos)
     function setupSetorLi(li, autoOpen = false) {
-        const id = `s_${Date.now().toString(36)}_${Math.floor(Math.random()*1000)}`;
-        li.setAttribute("data-setor-id", id);
+        let id = li.getAttribute("data-setor-id");
+
+        if (!id) {
+
+            const isFirstSetor = setorMenu.querySelectorAll(".setor-item").length === 1;
+
+            // Setor padrão ganha um ID fixo e permanente
+            if (isFirstSetor) {
+                id = "setor_padrao";
+            } else {
+                // Para novos setores, gera apenas 1 vez e nunca muda
+                id = "s_" + crypto.randomUUID();
+            }
+
+            li.setAttribute("data-setor-id", id);
+        }
 
         const btn = li.querySelector(".setor-btn");
         btn.addEventListener("click", () => {
@@ -551,34 +589,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const excluir = li.querySelector(".excluir-setor");
-        // só adiciona listener de excluir se o botão NÃO estiver desabilitado
         if (excluir && !excluir.disabled) {
             excluir.addEventListener("click", () => {
-                // se excluir setor aberto, remover seu storage
                 const sid = li.getAttribute("data-setor-id");
                 if (sid) localStorage.removeItem(storageKeyForSetor(sid));
-                // se for o atual, limpar currentSetorId
-                if (currentSetorId === sid) {
-                    currentSetorId = null;
-                    // after remove, try to open first existing setor
-                }
+
+                if (currentSetorId === sid) currentSetorId = null;
+
                 li.remove();
 
-                // se não há mais setores, podemos criar um novo padrão automaticamente (opcional)
                 const first = setorMenu.querySelector(".setor-item");
                 if (first) {
                     const firstId = first.getAttribute("data-setor-id");
                     if (firstId) loadSetor(firstId);
                 } else {
-                    // não há setor algum: cria 1 padrão programaticamente
                     createInitialSetorIfMissing();
                 }
             });
         }
 
-        // abre automaticamente se pedido
         if (autoOpen) loadSetor(id);
     }
+
 
     // ======================================================
     // ** SETOR PADRÃO (ÚNICA ALTERAÇÃO OBRIGATÓRIA) **
