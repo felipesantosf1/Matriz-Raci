@@ -499,7 +499,6 @@ body {
     cursor: pointer;
     transition: 0.3s ease-in-out;
     height: 100%;
-    background-color: #00315a;
     padding: 20px 20px; 
 }
 
@@ -576,7 +575,7 @@ body {
     padding: 2px 4px;
     border: 1px solid #888;
     border-radius: 4px;
-    width: auto; 
+    width: 100%; 
     display: inline-block;
     vertical-align: middle;
     box-sizing: content-box;
