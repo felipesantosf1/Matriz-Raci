@@ -275,12 +275,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const tdTrash = document.createElement("td");
-        tdTrash.classList.add("close-task");
-        tdTrash.innerHTML = `<button><i class="fa-solid fa-trash"></i></button>`;
+
+        tdTrash.classList.add("close-task-container");
+        
+        tdTrash.innerHTML = `
+            <div class="close-task">
+                <button>
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        `;
+
         tdTrash.querySelector("button").addEventListener("click", () => {
             newRow.remove();
             saveCurrentSetor();
         });
+
         newRow.appendChild(tdTrash);
 
         tbody.insertBefore(newRow, tbody.querySelector(".add-task").parentElement);
@@ -471,8 +481,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const tdTrash = document.createElement("td");
-            tdTrash.classList.add("close-task");
-            tdTrash.innerHTML = `<button><i class="fa-solid fa-trash"></i></button>`;
+
+            tdTrash.classList.add("close-task-container");
+            
+            tdTrash.innerHTML = `
+                <div class="close-task">
+                    <button>
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `;
 
             // se for a primeira tarefa, desabilita remoção
             if (taskIdx === 0) {

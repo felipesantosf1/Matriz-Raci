@@ -1,0 +1,12 @@
+membros
+    0 "Membro 1"
+
+setores 
+    0
+        id: ""
+        nome: ""
+tarefas
+    0
+        name: ""
+        raci
+            0 ""

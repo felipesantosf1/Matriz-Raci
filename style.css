@@ -380,11 +380,12 @@ body {
     max-width: 160px;
 }
 
+
 .add-member,
 .add-task {
-    width: 250px;
-    min-width: 250px;
-    max-width: 250px;
+    width: 320px;
+    min-width: 320px;
+    max-width: 320px;
 }
 
 .member {
@@ -451,50 +452,55 @@ body {
 }
 
 /* ----- TAREFAS ----- */
-.container-name-task {
-    background-color: #1b1b1b; 
+
+.linha-tarefa td {
+    height: 100%;
+    background-color: #1b1b1b;  
 }
 
 .nome-tarefa {
     display: flex;
-    padding: 10px;
-    min-width: 250px;
-    max-width: 250px;
+    padding: 5px;
+    min-width: 320px;
+    max-width: 320px;
     color: white;
 }
 
 .nome-tarefa span {
     width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-wrap: break-word; 
+    overflow-wrap: break-word; 
 }
 
 .col-raci {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 5px;
-    background-color: #1b1b1b;
-    height: 60px;
 }
 
-.close-task {
+.close-task-container{
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     overflow: hidden;
-    background-color: #1b1b1b;
+}
+
+.close-task {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
 }
 
 .close-task button {
-    padding: 14px;
     color: white;
     border: 0;
     background-color: transparent;
     font-size: 20px;
     cursor: pointer;
     transition: 0.3s ease-in-out;
-    height: 60px;
+    height: 100%;
+    background-color: #00315a;
+    padding: 20px 20px; 
 }
 
 .close-task button:hover {
