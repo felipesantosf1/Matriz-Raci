@@ -1,745 +1,519 @@
-document.addEventListener("DOMContentLoaded", () => {  
+document.addEventListener("DOMContentLoaded", () => {
 
-    // -------------------------------
-    // REFS
-    // -------------------------------
-    const btnAddMember = document.getElementById("btn-member");
-    const btnAddTask = document.getElementById("btn-task");
-    const table = document.querySelector(".matriz table");
-    const theadRow = table.querySelector("thead tr");
-    const tbody = document.querySelector(".container-lista-task");
-    const menuRaci = document.getElementById("menu-raci");
+    /* ============================= HEADER MATRIZ ============================= */
 
-    let raciTargetCell = null; 
-    let currentSetorId = null; 
+    const btnAddSector = document.getElementById("btnAddSector");
+    const sectorList = document.getElementById("sectorList");
 
-    // ========================================================================
-    // ITENS PADRÃO (membro, setor, tarefa)
-    // ========================================================================
-    function criarItensPadrao() {
-
-        // --------------------------
-        // MEMBRO PADRÃO
-        // --------------------------
-        if (theadRow.querySelectorAll(".member").length === 0) {
-            const th = document.createElement("th");
-            th.classList.add("member");
-
-            // Wrapper igual ao dos novos membros
-            const container = document.createElement("div");
-            container.classList.add("member-wrapper");
-
-            const span = document.createElement("span");
-            span.textContent = "Membro 1";
-            span.addEventListener("click", () => enableInlineEdit(span));
-
-            const btnRemove = document.createElement("button");
-            btnRemove.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
-            // torna o primeiro membro não removível
-            btnRemove.style.opacity = "0.35";
-            btnRemove.style.cursor = "not-allowed";
-            btnRemove.disabled = true;
-
-            // montar exatamente igual ao addMember
-            container.appendChild(span);
-            container.appendChild(btnRemove);
-
-            th.appendChild(container);
-            theadRow.appendChild(th);
-        }
-
-        // --------------------------
-        // TAREFA PADRÃO
-        // --------------------------
-        if (tbody.querySelectorAll(".linha-tarefa").length === 0) {
-            const row = document.createElement("tr");
-            row.classList.add("linha-tarefa");
-
-            const firstTd = document.createElement("td");
-            firstTd.classList.add("container-name-task");
-
-            const divName = document.createElement("div");
-            divName.classList.add("nome-tarefa");
-
-            const spanTask = document.createElement("span");
-            spanTask.textContent = "Tarefa 1";
-            spanTask.addEventListener("click", () => enableInlineEdit(spanTask));
-
-            divName.appendChild(spanTask);
-            firstTd.appendChild(divName);
-            row.appendChild(firstTd);
-
-            const totalMembers = theadRow.querySelectorAll(".member").length;
-
-            for (let i = 0; i < totalMembers; i++) {
-                const td = document.createElement("td");
-                td.innerHTML = `
-                    <div class="col-raci">
-                        <span class="circulo circulo-none">-</span>
-                    </div>
-                `;
-                td.querySelector(".circulo").addEventListener("click", (e) => openRaciMenu(e, td));
-                row.appendChild(td);
-            }
-
-            const tdTrash = document.createElement("td");
-            tdTrash.classList.add("close-task");
-            tdTrash.innerHTML = `<button><i class="fa-solid fa-trash"></i></button>`;
-            // primeira tarefa não removível
-            tdTrash.querySelector("button").style.opacity = "0.35";
-            tdTrash.querySelector("button").style.cursor = "not-allowed";
-            tdTrash.querySelector("button").disabled = true;
-            row.appendChild(tdTrash);
-
-            tbody.insertBefore(row, tbody.querySelector(".add-task").parentElement);
-        }
-    }
-
-    criarItensPadrao();
-
-
-
-    // ========================================================================
-    // FUNÇÃO DE EDIÇÃO INLINE — TIPO NOTION
-    // ========================================================================
-    function enableInlineEdit(spanElement) {
-
-        const oldValue = spanElement.textContent.trim();
-        const input = document.createElement("input");
-
-        input.type = "text";
-        input.value = oldValue;
-        input.classList.add("input-inline-edit");
-
-        spanElement.replaceWith(input);
-        input.focus();
-        input.select();
-
-        function finishEdit() {
-            let newValue = input.value.trim();
-            if (newValue === "") newValue = oldValue;
-
-            const newSpan = document.createElement("span");
-            newSpan.textContent = newValue;
-            newSpan.addEventListener("click", () => enableInlineEdit(newSpan));
-            input.replaceWith(newSpan);
-
-            // salvamos a mudança no setor atual (se houver)
-            saveCurrentSetor();
-        }
-
-        input.addEventListener("blur", finishEdit);
-        input.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") finishEdit();
-        });
-    }
-
-
-
-
-    
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-    // ========================================================================
-    // FUNÇÃO: Sincronizar TODAS as linhas com o número de membros
-    // ========================================================================
-    function syncAllRowsToMembers() {
-        const membersCount = theadRow.querySelectorAll(".member").length;
-
-        tbody.querySelectorAll(".linha-tarefa").forEach(row => {
-
-            const tds = Array.from(row.querySelectorAll("td"));
-
-            const hasTrash = row.querySelector(".close-task") !== null;
-            const currentRaciCells = hasTrash ? (tds.length - 2) : (tds.length - 1);
-
-            if (currentRaciCells < membersCount) {
-
-                const missing = membersCount - currentRaciCells;
-
-                for (let i = 0; i < missing; i++) {
-                    const td = document.createElement("td");
-                    td.innerHTML = `
-                        <div class="col-raci">
-                            <span class="circulo circulo-none">-</span>
-                        </div>
-                    `;
-                    td.querySelector(".circulo").addEventListener("click", (e) => openRaciMenu(e, td));
-
-                    row.insertBefore(td, row.querySelector(".close-task"));
-                }
-            }
-
-            if (currentRaciCells > membersCount) {
-                const excess = currentRaciCells - membersCount;
-
-                for (let i = 0; i < excess; i++) {
-                    row.removeChild(row.querySelectorAll("td")[currentRaciCells - i]);
-                }
-            }
-        });
-    }
-
-
-    // ========================================================================
-    // ADICIONAR MEMBRO
-    // ========================================================================
-    btnAddMember.addEventListener("click", () => {
-
-        const th = document.createElement("th");
-        th.classList.add("member");
-
-        // CREATE CONTAINER FIX
-        const container = document.createElement("div");
-        container.classList.add("member-wrapper"); // classe para estilizar no CSS
+    // CRIAÇÃO DE SETOR
+    // Responsável por criar a estrutura DOM de um setor
+    // Não adiciona eventos, não controla estado
+    function criarSetor(nome = "NOVO SETOR") {
+        const li = document.createElement("li");
+        li.className = "sector-item";
 
         const span = document.createElement("span");
-        span.textContent = "Novo Membro";
-        span.addEventListener("click", () => enableInlineEdit(span));
+        span.className = "name-sector";
+        span.textContent = nome;
 
-        const btnRemove = document.createElement("button");
-        btnRemove.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "edit-input";
+        input.style.display = "none"; // começa escondido
 
-        btnRemove.addEventListener("click", () => {
-            const index = Array.from(theadRow.children).indexOf(th);
+        const btnDeleteSector = document.createElement("button");
+        btnDeleteSector.className = "delete-sector";
+        btnDeleteSector.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
 
-            theadRow.removeChild(th);
-
-            tbody.querySelectorAll(".linha-tarefa").forEach(row => {
-                const tds = row.querySelectorAll("td");
-                tds[index - 1]?.remove();
-            });
-
-            syncAllRowsToMembers();
-
-            saveCurrentSetor();
-        });
-
-        // COLOCA SPAN/INPUT E BOTÃO NO CONTAINER
-        container.appendChild(span);
-        container.appendChild(btnRemove);
-
-        // COLOCA O CONTAINER NO <th>
-        th.appendChild(container);
-        theadRow.appendChild(th);
-
-        syncAllRowsToMembers();
-
-        saveCurrentSetor();
-    });
-
-    // ========================================================================
-    // ADICIONAR TAREFA
-    // ========================================================================
-    btnAddTask.addEventListener("click", () => {
-
-        const newRow = document.createElement("tr");
-        newRow.classList.add("linha-tarefa");
-
-        const firstTd = document.createElement("td");
-        firstTd.classList.add("container-name-task");
-
-        const divName = document.createElement("div");
-        divName.classList.add("nome-tarefa");
-
-        const spanTask = document.createElement("span");
-        spanTask.textContent = "Nova Tarefa";
-        spanTask.addEventListener("click", () => enableInlineEdit(spanTask));
-
-        divName.appendChild(spanTask);
-        firstTd.appendChild(divName);
-        newRow.appendChild(firstTd);
-
-        const members = theadRow.querySelectorAll(".member").length;
-        for (let i = 0; i < members; i++) {
-            const td = document.createElement("td");
-            td.innerHTML = `
-                <div class="col-raci">
-                    <span class="circulo circulo-none">-</span>
-                </div>
-            `;
-            td.querySelector(".circulo").addEventListener("click", (e) => openRaciMenu(e, td));
-            newRow.appendChild(td);
-        }
-
-        const tdTrash = document.createElement("td");
-
-        tdTrash.classList.add("close-task-container");
-        
-        tdTrash.innerHTML = `
-            <div class="close-task">
-                <button>
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </div>
-        `;
-
-        tdTrash.querySelector("button").addEventListener("click", () => {
-            newRow.remove();
-            saveCurrentSetor();
-        });
-
-        newRow.appendChild(tdTrash);
-
-        tbody.insertBefore(newRow, tbody.querySelector(".add-task").parentElement);
-
-        syncAllRowsToMembers();
-
-        saveCurrentSetor();
-    });
-
-    // ========================================================================
-    // MENU RACI
-    // ========================================================================
-    function openRaciMenu(event, td) {
-        raciTargetCell = td;
-
-        const rect = td.getBoundingClientRect();
-        menuRaci.style.display = "flex";
-        menuRaci.style.left = `${rect.left + window.scrollX}px`;
-        menuRaci.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        li.append(span, input, btnDeleteSector);
+        return li;
     }
 
-    menuRaci.querySelectorAll(".btn-circulo").forEach((btn) => {
+    // Clique no botão "Criar Setor"
+    btnAddSector.addEventListener("click", () => {
+        const setor = criarSetor();
+        sectorList.appendChild(setor);
+    });
 
-        btn.addEventListener("click", () => {
-            if (raciTargetCell) {
-                const span = raciTargetCell.querySelector(".circulo");
-                const value = btn.dataset.valor;
+    // DELETAR SETOR (delegação)
+    sectorList.addEventListener("click", (e) => {
+        // Verifica se o clique veio de um botão de deletar
+        const btnDelete = e.target.closest(".delete-sector");
+        if (!btnDelete) return;
 
-                span.classList.remove("cir-r", "cir-a", "cir-c", "cir-i", "cir-none");
+        // Sobe no DOM até encontrar o setor correspondente
+        const sectorItem = btnDelete.closest(".sector-item");
+        if (!sectorItem) return;
 
-                span.textContent = value;
+        sectorItem.remove();
+    });
 
-                switch (value) {
-                    case "R": span.classList.add("cir-r"); break;
-                    case "A": span.classList.add("cir-a"); break;
-                    case "C": span.classList.add("cir-c"); break;
-                    case "I": span.classList.add("cir-i"); break;
-                    case "none": span.classList.add("cir-none"); break
-                }
-            }
+    // EDIÇÃO DE SETOR — ENTRAR EM MODO EDIÇÃO (dblclick)
+    sectorList.addEventListener("dblclick", (e) => {
+        // Só entra em edição se o duplo clique for no nome
+        const name = e.target.closest(".name-sector");
+        if (!name) return;
 
-            menuRaci.style.display = "none";
+        const item = name.closest(".sector-item");
+        const input = item.querySelector(".edit-input");
 
-            // salvar escolha
-            saveCurrentSetor();
+        // Sincroniza valor atual
+        input.value = name.textContent;
+
+        // Alterna visualmente para modo edição
+        name.style.display = "none";
+        input.style.display = "block";
+
+        // UX: foco imediato no input
+        input.focus();
+        input.select();
+    });
+
+    // EDIÇÃO DE SETOR — FINALIZAR (Enter / Escape)
+    sectorList.addEventListener("keydown", (e) => {
+        const input = e.target.closest(".edit-input");
+        if (!input) return;
+
+        const item = input.closest(".sector-item");
+        const name = item.querySelector(".name-sector");
+
+        // ENTER → salva edição
+        if (e.key === "Enter") {
+            name.textContent = input.value.trim() || "SETOR SEM NOME";
+            input.style.display = "none";
+            name.style.display = "block";
+        }
+
+        // ESC → cancela edição
+        if (e.key === "Escape") {
+            input.style.display = "none";
+            name.style.display = "block";
+        }
+    });
+
+    // EDIÇÃO DE SETOR — CLIQUE FORA (blur em captura)
+    sectorList.addEventListener("blur", (e) => {
+            const input = e.target.closest(".edit-input");
+            if (!input) return;
+
+            const item = input.closest(".sector-item");
+            const name = item.querySelector(".name-sector");
+
+            // Salva ao perder foco
+            name.textContent = input.value.trim() || "SETOR SEM NOME";
+            input.style.display = "none";
+            name.style.display = "block";
+        },
+        true // necessário porque blur não faz bubble
+    );
+
+    // ATIVAR SETOR (estado visual)
+    sectorList.addEventListener("click", (e) => {
+        // Ignora cliques que não pertencem a um setor
+        const item = e.target.closest(".sector-item");
+        if (!item) return;
+
+        // Remove estado ativo de todos
+        sectorList
+            .querySelectorAll(".sector-item.active")
+            .forEach(el => el.classList.remove("active"));
+
+        // Ativa o setor clicado
+        item.classList.add("active");
+    });
+
+    /* ============================= FUNÇÃO BASE RACI ============================= */
+    function criarTaskContainerRaci() {
+        const td = document.createElement("td");
+        td.className = "container-raci";
+
+        const div = document.createElement("div");
+        div.className = "col-raci";
+
+        const span = document.createElement("span");
+        span.className = "circulo none-cir";
+        span.textContent = "-";
+
+        div.appendChild(span);
+        td.appendChild(div);
+
+        return td;
+    }
+
+    /* ============================= MATRIZ MEMBRO ============================= */
+    // CRIAÇÃO DE MEMBRO
+    const btnAddMember = document.getElementById("btnAddMember")
+    const ListMerbers = document.getElementById("list-members")
+
+    function criarTaskContainerRaci() {
+        const td = document.createElement("td");
+        td.className = "container-raci";
+
+        const div = document.createElement("div");
+        div.className = "col-raci";
+
+        const span = document.createElement("span");
+        span.className = "circulo none-cir";
+        span.textContent = "-";
+
+        div.appendChild(span);
+        td.appendChild(div);
+
+        return td;
+    }
+
+    function criarMember(nome = "Membro") {
+        const th = document.createElement("th");
+        th.className = "member";
+
+        const div = document.createElement("div");
+        div.className = "member-container";
+
+        const span = document.createElement("span");
+        span.className = "member-name";
+        span.textContent = nome;
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "input-member";
+        input.style.display = "none";
+
+        const btnDeletemember = document.createElement("button");
+        btnDeletemember.className = "remove-member";
+        btnDeletemember.type = "button";
+        btnDeletemember.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
+
+        th.append(div);
+        div.append(span, input, btnDeletemember);
+        return th;
+    }
+
+    btnAddMember.addEventListener("click", () => {
+        const member = criarMember();
+        ListMerbers.appendChild(member);
+
+        // adiciona uma nova coluna RACI em todas as tarefas existentes
+        const tarefas = document.querySelectorAll(".tarefa_item");
+
+        tarefas.forEach((tarefa) => {
+            const novaColunaRaci = criarTaskContainerRaci();
+            const colunaClose = tarefa.querySelector(".close-task");
+            tarefa.insertBefore(novaColunaRaci, colunaClose);
         });
+    });
+
+    // DELETAR MEMBRO
+    ListMerbers.addEventListener("click", (e) => {
+        const btnDeletemember = e.target.closest(".remove-member");
+        if (!btnDeletemember) return;
+
+        // Membro que será removido
+        const memberItem = btnDeletemember.closest(".member");
+        if (!memberItem) return;
+
+        // Descobre o índice da coluna do membro (posição no thead)
+        const members = Array.from(ListMerbers.querySelectorAll(".member"));
+        const memberIndex = members.indexOf(memberItem);
+
+        if (memberIndex === -1) return;
+
+        // Para cada tarefa, remove a coluna RACI correspondente ao membro
+        const tarefas = document.querySelectorAll(".tarefa_item");
+
+        tarefas.forEach((tarefa) => {
+            const colunasRaci = tarefa.querySelectorAll(".container-raci");
+
+            // Remove a coluna RACI exatamente na mesma posição do membro
+            if (colunasRaci[memberIndex]) {
+                colunasRaci[memberIndex].remove();
+            }
+        });
+
+        // Remove o membro do cabeçalho
+        memberItem.remove();
+    });
+
+    // EDIT DE MEMBRO
+    ListMerbers.addEventListener("dblclick", (e) => {
+        // Só entra em edição se o duplo clique for no nome
+        const name = e.target.closest(".member-name");
+        if (!name) return;
+
+        const item = name.closest(".member");
+        const input = item.querySelector(".input-member");
+
+        // Sincroniza valor atual
+        input.value = name.textContent;
+
+        // Alterna visualmente para modo edição
+        name.style.display = "none";
+        input.style.display = "block";
+
+        // UX: foco imediato no input
+        input.focus();
+        input.select();
+    });
+
+    ListMerbers.addEventListener("keydown", (e) => {
+        const input = e.target.closest(".input-member");
+        if (!input) return;
+
+        const item = input.closest(".member");
+        const name = item.querySelector(".member-name");
+
+        // ENTER → salva edição
+        if (e.key === "Enter") {
+            name.textContent = input.value.trim() || "Membro";
+            input.style.display = "none";
+            name.style.display = "block";
+        }
+
+        // ESC → cancela edição
+        if (e.key === "Escape") {
+            input.style.display = "none";
+            name.style.display = "block";
+        }
+    });
+
+    ListMerbers.addEventListener("blur", (e) => {
+            const input = e.target.closest(".input-member");
+            if (!input) return;
+
+            const item = input.closest(".member");
+            const name = item.querySelector(".member-name");
+
+            // Salva ao perder foco
+            name.textContent = input.value.trim() || "Membro";
+            input.style.display = "none";
+            name.style.display = "block";
+        },
+        true // necessário porque blur não faz bubble
+    );
+
+    /* ============================= MATRIZ TAREFA ============================= */
+    const btnAddTask = document.getElementById("btnAddTask");
+    const taskList = document.getElementById("taskList");
+
+    // Linha fixa do botão "Adicionar Tarefa"
+    // (use um id nela no HTML para ficar profissional)
+    const addTaskRow = taskList.querySelector("tr:last-child");
+
+    function criarTask(nome = "Nova Tarefa") {
+        const tr = document.createElement("tr");
+        tr.className = "tarefa_item";
+
+        const div = document.createElement("div");
+        div.className = "task-text";
+
+        // Nome da tarefa
+        const tdName = document.createElement("td");
+        tdName.className = "container_nametask";
+
+        const span = document.createElement("span");
+        span.className = "tarefa-name";
+        span.textContent = nome;
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "input-task";
+        input.style.display = "none";
+
+        div.append(span, input);
+        tdName.append(div)
+        tr.appendChild(tdName);
+
+        // Colunas RACI (uma por membro)
+        const membros = document.querySelectorAll(".member");
+        membros.forEach(() => {
+            tr.appendChild(criarTaskContainerRaci());
+        });
+
+        // Botão remover
+        const tdClose = document.createElement("td");
+        tdClose.className = "close-task";
+
+        const btnClose = document.createElement("button");
+        btnClose.type = "button";
+        btnClose.className = "btn_closetask";
+        btnClose.setAttribute("aria-label", "Remover tarefa");
+        btnClose.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+
+        tdClose.appendChild(btnClose);
+        tr.appendChild(tdClose);
+
+        return tr;
+    }
+
+    btnAddTask.addEventListener("click", () => {
+        const novaTask = criarTask();
+        taskList.insertBefore(novaTask, addTaskRow);
+    });
+
+    // DELETAR TAREFA
+    taskList.addEventListener("click", (e) => {
+        // Verifica se o clique veio de um botão de deletar
+        const btnDeleteTarefa = e.target.closest(".btn_closetask");
+        if (!btnDeleteTarefa) return;
+
+        // Sobe no DOM até encontrar a tarefa correspondente
+        const TarefaItem = btnDeleteTarefa.closest(".tarefa_item");
+        if (!TarefaItem) return;
+
+        TarefaItem.remove();
+    });
+
+    // EDIT DE TAREFA
+    taskList.addEventListener("dblclick", (e) => {
+        // Só entra em edição se o duplo clique for no nome
+        const name = e.target.closest(".tarefa-name");
+        if (!name) return;
+
+        const item = name.closest(".tarefa_item");
+        const input = item.querySelector(".input-task");
+
+        // Sincroniza valor atual
+        input.value = name.textContent;
+
+        // Alterna visualmente para modo edição
+        name.style.display = "none";
+        input.style.display = "-webkit-box";
+
+        // UX: foco imediato no input
+        input.focus();
+        input.select();
+    })
+
+    taskList.addEventListener("keydown", (e) => {
+        const input = e.target.closest(".input-task");
+        if (!input) return;
+
+        const item = input.closest(".tarefa_item");
+        const name = item.querySelector(".tarefa-name");
+
+        // ENTER → salva edição
+        if (e.key === "Enter") {
+            name.textContent = input.value.trim() || "Tarefa";
+            input.style.display = "none";
+            name.style.display = "block";
+        }
+
+        // ESC → cancela edição
+        if (e.key === "Escape") {
+            input.style.display = "none";
+            name.style.display = "block";
+        }
+    });
+
+    taskList.addEventListener("blur", (e) => {
+            const input = e.target.closest(".input-task");
+            if (!input) return;
+
+            const item = input.closest(".tarefa_item");
+            const name = item.querySelector(".tarefa-name");
+
+            // Salva ao perder foco
+            name.textContent = input.value.trim() || "Tarefa";
+            input.style.display = "none";
+            name.style.display = "block";
+        }, true // necessário porque blur não faz bubble
+    );
+    
+    /* ============================= MATRIZ SHOW TEXT ============================= */
+    const showText = document.getElementById("show_text");
+
+    document.addEventListener("mouseover", (e) => {
+        const target = e.target.closest(".member-name, .tarefa-name");
+        if (!target) return;
+
+        let isClamped = false;
+
+        if (target.classList.contains("member-name")) {
+            // corte horizontal (1 linha)
+            isClamped = target.scrollWidth > target.clientWidth;
+        }
+
+        if (target.classList.contains("tarefa-name")) {
+            // corte vertical (line-clamp)
+            isClamped = target.scrollHeight > target.clientHeight;
+        }
+
+        if (!isClamped) return;
+
+        showText.textContent = target.textContent;
+        showText.style.display = "block";
+
+        const rect = target.getBoundingClientRect();
+        showText.style.top = `${rect.bottom + window.scrollY + 6}px`;
+        showText.style.left = `${rect.left + window.scrollX}px`;
+    });
+
+    document.addEventListener("mouseout", (e) => {
+        const target = e.target.closest(".member-name, .tarefa-name");
+        if (!target) return;
+
+        showText.style.display = "none";
+    });
+
+
+
+
+
+    /* ============================= MATRIZ MENU ============================= */
+    const MenuRaci = document.getElementById("menu-raci");
+
+    taskList.addEventListener("click", (e) => {
+        const circulo = e.target.closest(".circulo");
+        if (!circulo) return;
+
+        e.stopPropagation();
+
+        circuloAtivo = circulo;
+        MenuRaci.style.display = "flex";
+
+        const rect = circulo.getBoundingClientRect();
+        const menuRect = MenuRaci.getBoundingClientRect();
+
+        MenuRaci.style.top = `${rect.bottom + window.scrollY + 6}px`;
+        MenuRaci.style.left =
+            `${rect.left + window.scrollX + (rect.width / 2) - (menuRect.width / 2)}px`;
+    });
+
+
+    MenuRaci.addEventListener("click", (e) => {
+        const btn = e.target.closest(".btn-circulo");
+        if (!btn || !circuloAtivo) return;
+
+        const valor = btn.dataset.valor;
+
+        // limpa classes anteriores
+        circuloAtivo.className = "circulo";
+
+        // aplica novo valor
+        circuloAtivo.textContent = valor;
+
+        // aplica classe visual correspondente
+        if (valor !== "-") {
+            circuloAtivo.classList.add(`cir-${valor.toLowerCase()}`);
+        } else {
+            circuloAtivo.classList.add("none-cir");
+        }
+
+        // fecha menu
+        MenuRaci.style.display = "none";
+        circuloAtivo = null;
     });
 
     document.addEventListener("click", (e) => {
-        if (!menuRaci.contains(e.target) && !e.target.classList.contains("circulo")) {
-            menuRaci.style.display = "none";
+        if (
+            !MenuRaci.contains(e.target)
+        ) {
+            MenuRaci.style.display = "none";
+            circuloAtivo = null;
         }
     });
 
 
-
-    // ========================================================================
-    // EDIÇÃO INLINE DOS ITENS EXISTENTES
-    // ========================================================================
-    document.querySelectorAll(".nome-tarefa span").forEach((span) => {
-        span.addEventListener("click", () => enableInlineEdit(span));
-    });
-
-    document.querySelectorAll("th.member span").forEach((span) => {
-        span.addEventListener("click", () => enableInlineEdit(span));
-    });
-
-
-
-    // ========================================================================
-    // --- SETORES ---
-    // ========================================================================
-    const btnAddSetor = document.querySelector(".btn-add-setor");
-    const setorMenu = document.querySelector(".setor-menu ul");
-
-    // helpers para armazenamento
-    function storageKeyForSetor(id) {
-        return `raci_setor_${id}`;
-    }
-
-    function serializeCurrentMatrix() {
-        // members
-        const memberThs = Array.from(theadRow.querySelectorAll("th.member"));
-        const members = memberThs.map(th => {
-            const span = th.querySelector("span");
-            return span ? span.textContent.trim() : "Membro";
-        });
-
-        // tasks
-        const tasks = [];
-        tbody.querySelectorAll(".linha-tarefa").forEach(row => {
-            const nameSpan = row.querySelector(".nome-tarefa span");
-            const taskName = nameSpan ? nameSpan.textContent.trim() : "Tarefa";
-            const tds = Array.from(row.querySelectorAll("td"));
-            const hasTrash = row.querySelector(".close-task") !== null;
-            const raciCells = [];
-            // raci cells start at index 1 (because first td is name), and end before trash if exists
-            const endIndex = hasTrash ? (tds.length - 1) : tds.length;
-            for (let i = 1; i < endIndex; i++) {
-                const span = tds[i].querySelector(".circulo");
-
-                raciCells.push({
-                    value: span ? span.textContent.trim() : "-",
-                    classe: span ? span.className : "circulo circulo-none"
-                });
-                
-            }
-            tasks.push({ name: taskName, raci: raciCells });
-        });
-
-        return { members, tasks };
-    }
-
-    function renderMatrixFromData(data) {
-        // limpa membros existentes (mantém o primeiro th .add-member)
-        Array.from(theadRow.querySelectorAll("th.member")).forEach(th => th.remove());
-
-        // remove todas linhas de tarefa
-        Array.from(tbody.querySelectorAll(".linha-tarefa")).forEach(tr => tr.remove());
-
-        // render members
-        data.members.forEach((mName, idx) => {
-            const th = document.createElement("th");
-            th.classList.add("member");
-            const container = document.createElement("div");
-            container.classList.add("member-wrapper");
-            const span = document.createElement("span");
-            span.textContent = mName || `Membro ${idx+1}`;
-            span.addEventListener("click", () => enableInlineEdit(span));
-
-            const btnRemove = document.createElement("button");
-            btnRemove.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
-
-            // Se for o primeiro membro, não permitir remoção
-            if (idx === 0) {
-                btnRemove.style.opacity = "0.35";
-                btnRemove.style.cursor = "not-allowed";
-                btnRemove.disabled = true;
-            } else {
-                btnRemove.addEventListener("click", () => {
-                    const index = Array.from(theadRow.children).indexOf(th);
-                    theadRow.removeChild(th);
-                    tbody.querySelectorAll(".linha-tarefa").forEach(row => {
-                        const tds = row.querySelectorAll("td");
-                        tds[index - 1]?.remove();
-                    });
-                    syncAllRowsToMembers();
-                    saveCurrentSetor();
-                });
-            }
-
-            container.appendChild(span);
-            container.appendChild(btnRemove);
-            th.appendChild(container);
-            theadRow.appendChild(th);
-        });
-
-        // render tasks
-        data.tasks.forEach((task, taskIdx) => {
-            const row = document.createElement("tr");
-            row.classList.add("linha-tarefa");
-
-            const firstTd = document.createElement("td");
-            firstTd.classList.add("container-name-task");
-            const divName = document.createElement("div");
-            divName.classList.add("nome-tarefa");
-            const spanTask = document.createElement("span");
-            spanTask.textContent = task.name || "Tarefa";
-            spanTask.addEventListener("click", () => enableInlineEdit(spanTask));
-            divName.appendChild(spanTask);
-            firstTd.appendChild(divName);
-            row.appendChild(firstTd);
-
-            // for each member, create raci cell using provided values (or '-')
-            const membersCount = data.members.length;
-            for (let i = 0; i < membersCount; i++) {
-                const td = document.createElement("td");
-                const raci = task.raci[i];
-                const value = raci?.value ?? "-";
-                const classe = raci?.classe ?? "circulo circulo-none";
-                td.innerHTML = `
-                    <div class="col-raci">
-                        <span class="${classe}">${value}</span>
-                    </div>
-                `;
-                td.querySelector(".circulo").addEventListener("click", (e) => openRaciMenu(e, td));
-                row.appendChild(td);
-            }
-
-            const tdTrash = document.createElement("td");
-
-            tdTrash.classList.add("close-task-container");
-            
-            tdTrash.innerHTML = `
-                <div class="close-task">
-                    <button>
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-            `;
-
-            // se for a primeira tarefa, desabilita remoção
-            if (taskIdx === 0) {
-                const btn = tdTrash.querySelector("button");
-                btn.style.opacity = "0.35";
-                btn.style.cursor = "not-allowed";
-                btn.disabled = true;
-            } else {
-                tdTrash.querySelector("button").addEventListener("click", () => {
-                    row.remove();
-                    saveCurrentSetor();
-                });
-            }
-
-            row.appendChild(tdTrash);
-
-            tbody.insertBefore(row, tbody.querySelector(".add-task").parentElement);
-        });
-
-        syncAllRowsToMembers();
-    }
-
-    function saveCurrentSetor() {
-        if (!currentSetorId) return;
-        const data = serializeCurrentMatrix();
-        localStorage.setItem(storageKeyForSetor(currentSetorId), JSON.stringify(data));
-    }
-
-    function loadSetor(id) {
-        // antes de trocar, salva o setor atual
-        if (currentSetorId) {
-            saveCurrentSetor();
-            // remove marcação visual de ativo se quiser (não obrigatório)
-            const prev = setorMenu.querySelector(`[data-setor-id="${currentSetorId}"]`);
-            if (prev) prev.classList.remove("active-setor");
-        }
-
-        currentSetorId = id;
-
-        // carrega dados do localStorage se houver
-        const raw = localStorage.getItem(storageKeyForSetor(id));
-        if (raw) {
-            try {
-                const data = JSON.parse(raw);
-                // se estrutura ok: render
-                renderMatrixFromData(data);
-            } catch (e) {
-                console.error("Erro ao parsear setor:", e);
-                // fallback para padrão
-                renderMatrixFromData({ members: ["Membro 1"], tasks: [{ name: "Tarefa 1", raci: ["-"] }] });
-            }
-        } else {
-            // cria estrutura padrão e salva
-            const defaultData = {
-                members: ["Membro 1"],
-                tasks: [{
-                    name: "Tarefa 1",
-                    raci: [{
-                        value: "-",
-                        classe: "circulo circulo-none"
-                    }]
-                }]
-            };
-            renderMatrixFromData(defaultData);
-            localStorage.setItem(storageKeyForSetor(id), JSON.stringify(defaultData));
-        }
-
-        // marca visual (opcional)
-        const currentLi = setorMenu.querySelector(`[data-setor-id="${id}"]`);
-        if (currentLi) currentLi.classList.add("active-setor");
-    }
-
-    // gera id e adiciona listeners ao li (usado tanto para o setor padrão quanto para novos)
-    function setupSetorLi(li, autoOpen = false) {
-        let id = li.getAttribute("data-setor-id");
-
-        if (!id) {
-
-            const isFirstSetor = setorMenu.querySelectorAll(".setor-item").length === 1;
-
-            // Setor padrão ganha um ID fixo e permanente
-            if (isFirstSetor) {
-                id = "setor_padrao";
-            } else {
-                // Para novos setores, gera apenas 1 vez e nunca muda
-                id = "s_" + crypto.randomUUID();
-            }
-
-            li.setAttribute("data-setor-id", id);
-        }
-
-        const btn = li.querySelector(".setor-btn");
-        btn.addEventListener("click", () => {
-            loadSetor(id);
-            document.querySelectorAll(".setor-btn").forEach(b => b.classList.remove("setor-ativo"));
-            btn.classList.add("setor-ativo");
-        });
-
-        const opcoes = li.querySelector(".setor-opcoes");
-        if (opcoes) {
-            opcoes.addEventListener("click", (e) => {
-                e.stopPropagation();
-                const menu = li.querySelector(".menu-setor-acao");
-                menu.classList.toggle("open");
-            });
-        }
-
-        const editar = li.querySelector(".editar-setor");
-        if (editar) {
-            editar.addEventListener("click", () => {
-                const span = li.querySelector(".setor-btn span");
-                enableInlineEdit(span);
-            });
-        }
-
-        const excluir = li.querySelector(".excluir-setor");
-        if (excluir && !excluir.disabled) {
-            excluir.addEventListener("click", () => {
-                const sid = li.getAttribute("data-setor-id");
-                if (sid) localStorage.removeItem(storageKeyForSetor(sid));
-
-                if (currentSetorId === sid) currentSetorId = null;
-
-                li.remove();
-
-                const first = setorMenu.querySelector(".setor-item");
-                if (first) {
-                    const firstId = first.getAttribute("data-setor-id");
-                    if (firstId) loadSetor(firstId);
-                } else {
-                    createInitialSetorIfMissing();
-                }
-            });
-        }
-
-        if (autoOpen) loadSetor(id);
-    }
-
-
-    // ======================================================
-    // ** SETOR PADRÃO (ÚNICA ALTERAÇÃO OBRIGATÓRIA) **
-    // ======================================================
-    if (setorMenu && setorMenu.querySelectorAll(".setor-item").length === 0) {
-
-        const li = document.createElement("li");
-        li.classList.add("setor-item");
-
-        li.innerHTML = `
-            <button class="setor-btn"><span>Setor Padrão</span></button>
-
-            <button class="setor-opcoes">
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-            </button>
-
-            <div class="menu-setor-acao">
-                <button class="editar-setor"><i class="fa-regular fa-pen-to-square"></i></button>
-
-                <button class="excluir-setor" style="opacity:0.35; cursor:not-allowed;" disabled>
-                    <i class="fa-solid fa-trash-can"></i>
-                </button>
-            </div>
-        `;
-
-        setorMenu.appendChild(li);
-
-        // setup id + listeners + abrir esse setor
-        setupSetorLi(li, true);
-
-        li.querySelector(".setor-btn").classList.add("setor-ativo");
-    }
-
-    // ======================================================
-    // ADICIONAR NOVOS SETORES
-    // ======================================================
-    btnAddSetor?.addEventListener("click", () => {
-        const li = document.createElement("li");
-        li.classList.add("setor-item");
-
-        li.innerHTML = `
-            <button class="setor-btn"><span>Novo Setor</span></button>
-
-            <button class="setor-opcoes">
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-            </button>
-
-            <div class="menu-setor-acao">
-                <button class="editar-setor"><i class="fa-regular fa-pen-to-square"></i></button>
-                <button class="excluir-setor"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
-        `;
-
-        setorMenu.appendChild(li);
-
-        // setup id + listeners e abrir o setor recém-criado (para garantir que comece com estrutura padrão)
-        setupSetorLi(li, true);
-    });
-
-    document.addEventListener("click", () => {
-        document.querySelectorAll(".menu-setor-acao.open").forEach(menu => {
-            menu.classList.remove("open");
-        });
-    });
-
-    // se já existirem setores no DOM (por exemplo markup pré-existente), garantimos setup para todos
-    if (setorMenu) {
-        Array.from(setorMenu.querySelectorAll(".setor-item")).forEach((li, idx) => {
-            if (!li.getAttribute("data-setor-id")) {
-                // Se já tiver um botão excluir marcado como disabled no markup, o setup vai respeitar
-                setupSetorLi(li, idx === 0); // abre o primeiro
-            }
-        });
-    }
-
-    // helper: cria um setor inicial caso não exista nenhum (usado se o usuário excluir tudo)
-    function createInitialSetorIfMissing() {
-        if (!setorMenu.querySelector(".setor-item")) {
-            const li = document.createElement("li");
-            li.classList.add("setor-item");
-            li.innerHTML = `
-                <button class="setor-btn"><span>Setor Padrão</span></button>
-
-                <button class="setor-opcoes">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                </button>
-
-                <div class="menu-setor-acao">
-                    <button class="editar-setor"><i class="fa-regular fa-pen-to-square"></i></button>
-
-                    <button class="excluir-setor" style="opacity:0.35; cursor:not-allowed;" disabled>
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-            `;
-            setorMenu.appendChild(li);
-            setupSetorLi(li, true);
-        }
-    }
-
-    // Caso o setor padrão (ou qualquer setor) já tenha sido salvo antes e exista um setor salvo no localStorage,
-    // preferimos abrir o primeiro setor do menu (o setupSetorLi acima já faz open no primeiro item).
-    // Se por algum motivo currentSetorId ainda é nulo (sem setores), garantimos criar um.
-    if (!currentSetorId) {
-        const first = setorMenu.querySelector(".setor-item");
-        if (first) {
-            const firstId = first.getAttribute("data-setor-id");
-            if (firstId) loadSetor(firstId);
-        } else {
-            createInitialSetorIfMissing();
-        }
-    }
-
+    
 });
+
+

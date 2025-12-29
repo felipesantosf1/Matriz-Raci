@@ -3,172 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <!--ICON-->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!--ICON-->
+    
     <link rel="stylesheet" href="style.css">
     <title>Matriz Raci</title>
 </head>
 <body>
+    <main class="app">
 
-    <div class="container">
+        <!-- ================= LEGENDA ================= -->
+        <section class="raci-legend" id="raciLegend">
 
-        <!-- LEGENDA -->
-        <section class="legenda">
-            <h2>Legenda</h2>
+            <header class="legend-header">
+                <h2>Legenda</h2>
+                <p class="legend-description">
+                    Adicione tarefas ou projetos e identifique os membros da equipe usando a matriz RACIS.
+                </p>
+            </header>
 
-            <p class="detalhe-legenda">Adicione tarefas ou projetos e identifique os membros da equipe envolvidos. Classifique o papel deles usando a matriz RACI.</p>
-
-            <ul class="legenda-lista">
-                
-                <li class="legenda-item">
-                    <span class="circulo r">R</span>
-                    <p><strong>Responsável:</strong> executa ou conclui a tarefa.</p>
+            <ul class="legend-list">
+                <li class="legend-item">
+                    <span class="raci-circle r">R</span>
+                    <span><strong>Responsável</strong> — Responsável por executar a tarefa.</span>
                 </li>
-
-                <li class="legenda-item">
-                    <span class="circulo a">A</span>
-                    <p><strong>Aprovador:</strong> garante a conclusão bem-sucedida da tarefa.</p>
+                <li class="legend-item">
+                    <span class="raci-circle a">A</span>
+                    <span><strong>Aprovador</strong> — Valida a entrega.</span>
                 </li>
-
-                <li class="legenda-item">
-                    <span class="circulo c">C</span>
-                    <p><strong>Consultado:</strong> contribui com informações quando necessário.</p>
+                <li class="legend-item">
+                    <span class="raci-circle c">C</span>
+                    <span><strong>Consultado</strong> — Fornece apoio teorico a quem executa tarefa.</span>
                 </li>
-
-                <li class="legenda-item">
-                    <span class="circulo i">I</span>
-                    <p><strong>Informado:</strong> é mantido atualizado sobre o andamento.</p>
+                <li class="legend-item">
+                    <span class="raci-circle i">I</span>
+                    <span><strong>Informado</strong> — Acompanha o progresso.</span>
                 </li>
-
+                <li class="legend-item">
+                    <span class="raci-circle s">S</span>
+                    <span><strong>Suporte</strong> — Apoia diretamente quem executa a tarefa.</span>
+                </li>
             </ul>
+
         </section>
 
-        <!-- MATRIZ -->
-        <section class="matriz-container">
+        <!-- ================= MATRIZ = ================ -->
+        <section class="raci-matrix">
 
-            <!-- SETORES -->
-            <header class="matriz-header">
-    
-                <div class="container-add-setor">
-                    <button class="btn-add-setor">Criar Setor</button>
+            <!-- ===== SETORES ===== -->
+            <header class="matrix-header">
+
+                <div class="sector-actions">
+                    <button id="btnAddSector" class="btn btn-primary" type="button">
+                        Criar Setor
+                    </button>
                 </div>
 
-                <nav class="setor-menu">
-                    <ul>
-                        <!-- intens da lista -->      
-                        <!-- Exemplo de item -->
-                        <!-- <li class="setor-item">
-                            <div class="container-button-setor">
-                                <button class="setor-btn setor-nome">Elétrica</button>
-                            </div>
-                            
-                            <button class="setor-opcoes">
-                                <i class="fa-solid fa-ellipsis-vertical"></i>
-                            </button>
-
-                            <div class="menu-setor-acao">
-                                <button class="editar-setor"><i class="fa-regular fa-pen-to-square"></i></button>
-                                <button class="excluir-setor"><i class="fa-solid fa-trash-can"></i></button>
-                            </div>
-                        </li>  -->
-
+                <nav class="sector-nav">
+                    <ul id="sectorList" class="sector-list">
+                        <li class="sector-item"> <!-- classe "active" --> 
+                            <span class="name-sector">SETOR PADRÃO</span> 
+                            <input type="text" class="edit-input"> 
+                            <button class="delete-sector not-close"><i class="fa-solid fa-xmark"></i></button>
+                        </li>
+        
                     </ul>
                 </nav>
 
             </header>
+            
+            <!-- ===== TABELA ===== -->
+            <section class="matrix-table-wrapper">
 
-            <!-- TABELA -->
-            <main class="matriz">
-                <div class="zoom-area">
-                    
-                    <table>
+                <table class="raci-table" id="raciTable">
 
-                        <thead>
-                            <tr>
-                                <th class="add-member">
-                                    <button id="btn-member">Adicionar Membro</button>
-                                </th>
-                                <!-- intens da lista -->
-                                <!-- Exemplo de item -->
-                                <!-- <th class="member">
-                                    Luigi <button><i class="fa-solid fa-xmark"></i></button>
-                                </th>
-                                <th class="member">
-                                    Jayanne <button><i class="fa-solid fa-xmark"></i></button>
-                                </th>
-                                <th class="member">
-                                    Miqueias <button><i class="fa-solid fa-xmark"></i></button>
-                                </th>
-                                <th class="member">
-                                    Maurício <button><i class="fa-solid fa-xmark"></i></button>
-                                </th>  -->
+                    <thead>
+                        <!-- membros -->
+                        <tr id="list-members">
+                            <th class="task-column">
+                                <button id="btnAddMember" class="btn btn-add-Member" type="button">
+                                    Adicionar Membro
+                                </button>
+                            </th>
 
-                            </tr>
-                        </thead>
+                            <th class="member">
+                                <div class="member-container">
+                                    <span class="member-name">Membro Padrão</span>
+                                    <input class="input-member" type="text"> 
+                                    <button class="remove-member not-close" type="button">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                            </th>
+                            
+                        </tr>
+                    </thead>
 
-                        <tbody class="container-lista-task">
-                        <!--<tr class="linha-tarefa">
-                                <td class="container-name-task">
-                                    <div class="nome-tarefa">
-                                        <span id="input-name-task">Nome da Tarefa</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="col-raci">
-                                        <span class="circulo a">A</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="col-raci">
-                                        <span class="circulo r">R</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="col-raci">
-                                        <span class="circulo i">I</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="col-raci">
-                                        <span class="circulo c">C</span>
-                                    </div>
-                                </td>
-                                <td class="">
-                                    <div class="close-task">
-                                        <button>
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>  -->
+                    <tbody id="taskList">
+                        <!-- tarefas -->
+                        <tr class="tarefa_item">
 
-                            <!-- Botão de adicionar tarefa -->
-                            <tr>
-                                <td class="add-task">
-                                    <button class="btn-add-task" id="btn-task">Adicionar Tarefa</button>
-                                </td>
-                            </tr>
+                            <td class="container_nametask">
+                                <div class="task-text">
+                                    <span class="tarefa-name">Tarefa Padrão</span> 
+                                    <input class="input-task" type="text">
+                                </div>
+                            </td>
+                            <td class="container-raci">
+                                <div class="col-raci">
+                                    <span class="circulo none-cir">-</span> 
+                                </div>
+                            </td>
+                            <td class="close-task not-close">
+                                <button class="btn_closetask" type="button" aria-label="Remover tarefa">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
 
-                            <div id="menu-raci" class="section-curculo">
-                                <button class="btn-circulo cir-r" data-valor="R">R</button>
-                                <button class="btn-circulo cir-a" data-valor="A">A</button>
-                                <button class="btn-circulo cir-c" data-valor="C">C</button>
-                                <button class="btn-circulo cir-i" data-valor="I">I</button>
-                                <button class="btn-circulo cir-none" data-valor="-">-</button>
-                            </div>
+                        </tr>
+                        
+                        <!-- Botão de adicionar tarefa -->
+                        <tr>
+                            <td class="add-task">
+                                <button id="btnAddTask" class="btn btn-add-task" type="button">
+                                    Adicionar Tarefa
+                                </button>
+                            </td>
+                        </tr>
 
-                        </tbody>
+                        <div id="menu-raci" class="section-curculo">
+                            <button class="btn-circulo cir-r" data-valor="R">R</button>
+                            <button class="btn-circulo cir-a" data-valor="A">A</button>
+                            <button class="btn-circulo cir-c" data-valor="C">C</button>
+                            <button class="btn-circulo cir-i" data-valor="I">I</button>
+                            <button class="btn-circulo cir-s" data-valor="S">S</button>
+                            <button class="btn-circulo cir-none" data-valor="-">-</button>
+                        </div>
+                    </tbody>
 
-                    </table>
+                </table>
 
-                </div>
-            </main>
+                <div id="show_text" class="show_text"></div>
+
+            </section>
 
         </section>
 
-    </div>
-
+    </main>
     <script src="code.js"></script>
 </body>
 </html>
+
+
