@@ -1,23 +1,74 @@
 {
-    "setores" : [
+    "setores": [
         {
             "id": "s1",
-            "nome": "Setor Padrão",
+            "nome": "Eletrica",
             "membros": [
-                { "id": "m1", "nome": "Membro" }
-            ],
-            "Tarefas" : [
                 {
-                    "id" : "t1",
-                    "nome" : "Tarefa",
-                    "raci" : {
-                        "m1" : "-"
+                    "id": "m1",
+                    "nome": "Felipe"
+                }
+            ],
+            "Tarefas": [
+                {
+                    "id": "t1",
+                    "nome": "Tarefa",
+                    "raci": {
+                        "m1": "R"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "s1767384526067",
+            "nome": "Suspenção",
+            "membros": [
+                {
+                    "id": "m1767384526067",
+                    "nome": "Membro"
+                },
+                {
+                    "id": "m1767386085759",
+                    "nome": "Membro"
+                }
+            ],
+            "Tarefas": [
+                {
+                    "id": "t1767384526067",
+                    "nome": "Tarefa",
+                    "raci": {
+                        "m1767384526067": "-",
+                        "m1767386085759": "-"
+                    }
+                },
+                {
+                    "id": "t1767384890242",
+                    "nome": "Tarefa",
+                    "raci": {
+                        "m1767384526067": "-",
+                        "m1767386085759": "-"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "s1767385026474",
+            "nome": "Direção",
+            "membros": [
+                {
+                    "id": "m1767385026474",
+                    "nome": "Membro"
+                }
+            ],
+            "Tarefas": [
+                {
+                    "id": "t1767385026474",
+                    "nome": "Tarefa",
+                    "raci": {
+                        "m1767385026474": "R"
                     }
                 }
             ]
         }
-
     ]
 }
-
-

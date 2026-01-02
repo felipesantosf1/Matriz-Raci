@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain } = require("electron"); 
 const path = require("path");
+const fs = require("fs"); 
 
 function createWindow() {
     const mainWindow = new BrowserWindow({
@@ -10,13 +11,26 @@ function createWindow() {
         autoHideMenuBar: true,
         resizable: true,
         /* icon: path.join(__dirname, 'img', ), */
-        /* webPreferences: {
-            preload: path.join(__dirname, "preload.js")
-        } */
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js") 
+        }
     });
 
-    /* mainWindow.loadFile(path.join(__dirname, 'interface', 'index.html')); */
-    mainWindow.loadFile(path.join(__dirname, 'test 2', 'index.html'));
+    mainWindow.loadFile(path.join(__dirname, 'interface', 'index.html')); 
 }
 
 app.whenReady().then(createWindow);
+
+/* ================= SALVAR JSON ================= */ 
+ipcMain.handle("salvar-json", async (_, dados) => {
+    const filePath = path.join(__dirname, "data", "racisave.json"); 
+
+    fs.writeFileSync(
+        filePath,
+        JSON.stringify(dados, null, 4),
+        "utf-8"
+    );
+
+    return true;
+});
+

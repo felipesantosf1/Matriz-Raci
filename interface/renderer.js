@@ -7,9 +7,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let dados = null;
     let setorAtivo = null;
+    let circuloAtivo = null; 
+
+    /* ============================= SALVAR JSON ============================= */
+    function salvar() {                     
+        if (window.api && dados) {
+            window.api.salvar(dados);
+        }
+    }
+
+    /* ============================= FUNÇÃO VISUAL RACI ============================= */
+    function aplicarRaciVisual(span, valor) {  
+        span.className = "circulo";
+        span.textContent = valor;
+
+        if (valor !== "-") {
+            span.classList.add(`cir-${valor.toLowerCase()}`);
+        } else {
+            span.classList.add("none-cir");
+        }
+    }
 
     /* ============================= FETCH JSON ============================= */
-    fetch("racisave.json")
+    fetch("../data/racisave.json")
         .then(response => response.json())
         .then(data => {
             dados = data;
@@ -77,11 +97,25 @@ document.addEventListener("DOMContentLoaded", () => {
         const novoSetor = {
             id: `s${Date.now()}`,
             nome: "NOVO SETOR",
-            membros: [],
-            Tarefas: []
+            membros: [
+                {
+                    id: `m${Date.now()}`,
+                    nome: "Membro"
+                }
+            ],
+            Tarefas: [
+                {
+                    id: `t${Date.now()}`,
+                    nome: "Tarefa",
+                    raci: {
+                        [`m${Date.now()}`]: "-"
+                    }
+                }
+            ]
         };
 
-        dados.setores.push(novoSetor);
+        dados.setores.push(novoSetor);   
+        salvar();                        
 
         const li = criarSetor(novoSetor.nome);
         li.addEventListener("click", () => ativarSetor(li, novoSetor));
@@ -98,7 +132,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Sobe no DOM até encontrar o setor correspondente
         const sectorItem = btnDelete.closest(".sector-item");
-        if (!sectorItem) return;
+        const index = [...sectorList.children].indexOf(sectorItem);
+
+        dados.setores.splice(index, 1);  
+        salvar();
 
         sectorItem.remove();
     });
@@ -134,17 +171,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // ENTER → salva edição
         if (e.key === "Enter") {
-            name.textContent = input.value.trim() || "SETOR SEM NOME";
+            const novoNome = input.value.trim() || "SETOR SEM NOME";
+            name.textContent = novoNome;
+
+            // >>> SINCRONIZA COM JSON
+            const setores = Array.from(sectorList.querySelectorAll(".sector-item"));
+            const index = setores.indexOf(item);
+
+            if (index !== -1) {
+                dados.setores[index].nome = novoNome; 
+                salvar();                              
+            }
+
             input.style.display = "none";
             name.style.display = "block";
         }
 
-        // ESC → cancela edição
+        // ESC → cancela edição (não salva)
         if (e.key === "Escape") {
             input.style.display = "none";
             name.style.display = "block";
         }
     });
+
 
     // EDIÇÃO DE SETOR — CLIQUE FORA (blur em captura)
     sectorList.addEventListener("blur", (e) => {
@@ -255,8 +304,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* ============================= RENDER TABELA ============================= */
     function renderTabelaRaci(setor) {
-        const MenuRaci = document.getElementById("menu-raci");   // <<< ALTERAÇÃO
-        const showText = document.getElementById("show_text");  // <<< ALTERAÇÃO
+
+        const MenuRaci = document.getElementById("menu-raci");   
+        const showText = document.getElementById("show_text");  
 
         tableWrapper.innerHTML = "";
 
@@ -283,7 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
         thTask.appendChild(btnAddMember);
         trHead.appendChild(thTask);
 
-        setor.membros.forEach(membro => {
+        setor.membros.forEach((membro, index) => {
             const th = document.createElement("th");
             th.className = "member";
 
@@ -299,8 +349,12 @@ document.addEventListener("DOMContentLoaded", () => {
             input.type = "text";
 
             const btnRemove = document.createElement("button");
-            btnRemove.className = "remove-member not-close";
+            btnRemove.className = "remove-member";
             btnRemove.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
+
+            if (index === 0) {
+                btnRemove.classList.add("not-close"); 
+            }
 
             container.append(span, input, btnRemove);
             th.appendChild(container);
@@ -316,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const tbody = document.createElement("tbody");
         tbody.id = "taskList";
 
-        setor.Tarefas.forEach(tarefa => {
+        setor.Tarefas.forEach((tarefa, index) => {
             const tr = document.createElement("tr");
             tr.className = "tarefa_item";
 
@@ -346,8 +400,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 col.className = "col-raci";
 
                 const span = document.createElement("span");
-                span.className = "circulo none-cir";
-                span.textContent = tarefa.raci?.[membro.id] || "-";
+                const valor = tarefa.raci?.[membro.id] || "-";
+                aplicarRaciVisual(span, valor); 
 
                 col.appendChild(span);
                 tdRaci.appendChild(col);
@@ -355,7 +409,11 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const tdClose = document.createElement("td");
-            tdClose.className = "close-task not-close";
+            tdClose.className = "close-task";
+
+            if (index === 0) {
+                tdClose.classList.add("not-close"); 
+            }
 
             const btnDelete = document.createElement("button");
             btnDelete.className = "btn_closetask";
@@ -392,17 +450,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const btnAddMemberRef = document.getElementById("btnAddMember");
 
         btnAddMemberRef.addEventListener("click", () => {
-            const member = criarMember();
-            listMembers.appendChild(member);
+            const id = `m${Date.now()}`;
 
-            const tarefas = document.querySelectorAll(".tarefa_item");
+            setorAtivo.membros.push({ id, nome: "Membro" }); 
 
-            tarefas.forEach(tarefa => {
-                const novaColuna = criarTaskContainerRaci();
-                const colunaClose = tarefa.querySelector(".close-task");
-                tarefa.insertBefore(novaColuna, colunaClose);
+            // adiciona "-" para o novo membro em todas as tarefas
+            setorAtivo.Tarefas.forEach(tarefa => {
+                tarefa.raci[id] = "-"; 
             });
+
+            salvar(); 
+            renderTabelaRaci(setorAtivo); 
         });
+
 
 
         // DELETAR MEMBRO
@@ -410,31 +470,28 @@ document.addEventListener("DOMContentLoaded", () => {
             const btnDeletemember = e.target.closest(".remove-member");
             if (!btnDeletemember) return;
 
-            // Membro que será removido
             const memberItem = btnDeletemember.closest(".member");
             if (!memberItem) return;
 
-            // Descobre o índice da coluna do membro (posição no thead)
+            // índice do membro no JSON
             const members = Array.from(listMembers.querySelectorAll(".member"));
             const memberIndex = members.indexOf(memberItem);
-
             if (memberIndex === -1) return;
 
-            // Para cada tarefa, remove a coluna RACI correspondente ao membro
-            const tarefas = document.querySelectorAll(".tarefa_item");
+            const memberId = setorAtivo.membros[memberIndex].id; 
 
-            tarefas.forEach((tarefa) => {
-                const colunasRaci = tarefa.querySelectorAll(".container-raci");
+            // remove o membro do JSON
+            setorAtivo.membros.splice(memberIndex, 1); 
 
-                // Remove a coluna RACI exatamente na mesma posição do membro
-                if (colunasRaci[memberIndex]) {
-                    colunasRaci[memberIndex].remove();
-                }
+            // remove o RACI desse membro em todas as tarefas
+            setorAtivo.Tarefas.forEach(tarefa => {
+                delete tarefa.raci[memberId]; 
             });
 
-            // Remove o membro do cabeçalho
-            memberItem.remove();
+            salvar(); 
+            renderTabelaRaci(setorAtivo); 
         });
+
 
         // EDIT DE MEMBRO
         listMembers.addEventListener("dblclick", (e) => {
@@ -466,17 +523,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // ENTER → salva edição
             if (e.key === "Enter") {
-                name.textContent = input.value.trim() || "Membro";
+                const novoNome = input.value.trim() || "Membro";
+                name.textContent = novoNome;
+
+                // >>> SINCRONIZA COM JSON
+                const members = Array.from(listMembers.querySelectorAll(".member"));
+                const index = members.indexOf(item);
+                if (index !== -1) {
+                    setorAtivo.membros[index].nome = novoNome; 
+                    salvar();                                  
+                }
+
                 input.style.display = "none";
                 name.style.display = "block";
             }
 
-            // ESC → cancela edição
+            // ESC → cancela edição (não salva)
             if (e.key === "Escape") {
                 input.style.display = "none";
                 name.style.display = "block";
             }
         });
+
 
         listMembers.addEventListener("blur", (e) => {
                 const input = e.target.closest(".input-member");
@@ -494,25 +562,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
         /* ================= EVENTO ADICIONAR TAREFA ================= */
         const taskList = document.getElementById("taskList");
-        const addTaskRow = taskList.querySelector("tr:last-child");
+        /* const addTaskRow = taskList.querySelector("tr:last-child"); */
 
         btnAddTask.addEventListener("click", () => {
-            const novaTask = criarTask();
-            taskList.insertBefore(novaTask, addTaskRow);
+            const id = `t${Date.now()}`;
+            const raci = {};
+
+            // cria o raci padrão para todos os membros
+            setorAtivo.membros.forEach(membro => {
+                raci[membro.id] = "-";
+            });
+
+            setorAtivo.Tarefas.push({
+                id,
+                nome: "Tarefa",
+                raci
+            }); 
+
+            salvar(); 
+            renderTabelaRaci(setorAtivo); 
         });
 
-            // DELETAR TAREFA
+
+        // DELETAR TAREFA
         taskList.addEventListener("click", (e) => {
-            // Verifica se o clique veio de um botão de deletar
             const btnDeleteTarefa = e.target.closest(".btn_closetask");
             if (!btnDeleteTarefa) return;
 
-            // Sobe no DOM até encontrar a tarefa correspondente
-            const TarefaItem = btnDeleteTarefa.closest(".tarefa_item");
-            if (!TarefaItem) return;
+            const tarefaItem = btnDeleteTarefa.closest(".tarefa_item");
+            if (!tarefaItem) return;
 
-            TarefaItem.remove();
+            // índice da tarefa no JSON
+            const tarefas = Array.from(taskList.querySelectorAll(".tarefa_item"));
+            const index = tarefas.indexOf(tarefaItem);
+            if (index === -1) return;
+
+            setorAtivo.Tarefas.splice(index, 1); 
+            salvar();                            
+            renderTabelaRaci(setorAtivo);        
         });
+
 
         // EDIT DE TAREFA
         taskList.addEventListener("dblclick", (e) => {
@@ -544,17 +633,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // ENTER → salva edição
             if (e.key === "Enter") {
-                name.textContent = input.value.trim() || "Tarefa";
+                const novoNome = input.value.trim() || "Tarefa";
+                name.textContent = novoNome;
+
+                // >>> SINCRONIZA COM JSON
+                const tarefas = Array.from(taskList.querySelectorAll(".tarefa_item"));
+                const index = tarefas.indexOf(item);
+                if (index !== -1) {
+                    setorAtivo.Tarefas[index].nome = novoNome; 
+                    salvar();                                  
+                }
+
                 input.style.display = "none";
                 name.style.display = "block";
             }
 
-            // ESC → cancela edição
+            // ESC → cancela edição (não salva)
             if (e.key === "Escape") {
                 input.style.display = "none";
                 name.style.display = "block";
             }
         });
+
 
         taskList.addEventListener("blur", (e) => {
                 const input = e.target.closest(".input-task");
@@ -595,23 +695,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const valor = btn.dataset.valor;
 
-            // limpa classes anteriores
-            circuloAtivo.className = "circulo";
+            // ===== VISUAL (centralizado) =====
+            aplicarRaciVisual(circuloAtivo, valor); 
 
-            // aplica novo valor
-            circuloAtivo.textContent = valor;
+            // ===== SINCRONIZA COM JSON =====
+            const tarefaItem = circuloAtivo.closest(".tarefa_item");
+            const tarefaIndex = Array
+                .from(document.querySelectorAll(".tarefa_item"))
+                .indexOf(tarefaItem);
 
-            // aplica classe visual correspondente
-            if (valor !== "-") {
-                circuloAtivo.classList.add(`cir-${valor.toLowerCase()}`);
-            } else {
-                circuloAtivo.classList.add("none-cir");
-            }
+            const colunas = Array.from(tarefaItem.querySelectorAll(".container-raci"));
+            const colunaIndex = colunas.indexOf(circuloAtivo.closest(".container-raci"));
+
+            const membroId = setorAtivo.membros[colunaIndex].id; 
+
+            setorAtivo.Tarefas[tarefaIndex].raci[membroId] = valor; 
+            salvar();                                               
 
             // fecha menu
             MenuRaci.style.display = "none";
             circuloAtivo = null;
         });
+
+
 
         document.addEventListener("click", (e) => {
             if (
