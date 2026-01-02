@@ -63,11 +63,11 @@
 
                 <nav class="sector-nav">
                     <ul id="sectorList" class="sector-list">
-                        <li class="sector-item"> <!-- classe "active" --> 
+                        <!-- <li class="sector-item active"> classe "active" 
                             <span class="name-sector">SETOR PADRÃO</span> 
                             <input type="text" class="edit-input"> 
                             <button class="delete-sector not-close"><i class="fa-solid fa-xmark"></i></button>
-                        </li>
+                        </li> -->
         
                     </ul>
                 </nav>
@@ -77,10 +77,11 @@
             <!-- ===== TABELA ===== -->
             <section class="matrix-table-wrapper">
 
-                <table class="raci-table" id="raciTable">
+                <!-- ===== Exemplo que deveria ficar a tabela no js ===== -->
+                <!-- <table class="raci-table" id="raciTable">
 
                     <thead>
-                        <!-- membros -->
+                        membros
                         <tr id="list-members">
                             <th class="task-column">
                                 <button id="btnAddMember" class="btn btn-add-Member" type="button">
@@ -102,7 +103,7 @@
                     </thead>
 
                     <tbody id="taskList">
-                        <!-- tarefas -->
+                        tarefas 
                         <tr class="tarefa_item">
 
                             <td class="container_nametask">
@@ -124,26 +125,26 @@
 
                         </tr>
                         
-                        <!-- Botão de adicionar tarefa -->
+                        Botão de adicionar tarefa 
                         <tr>
                             <td class="add-task">
                                 <button id="btnAddTask" class="btn btn-add-task" type="button">
                                     Adicionar Tarefa
                                 </button>
                             </td>
-                        </tr>
+                        </tr> 
 
-                        <div id="menu-raci" class="section-curculo">
-                            <button class="btn-circulo cir-r" data-valor="R">R</button>
-                            <button class="btn-circulo cir-a" data-valor="A">A</button>
-                            <button class="btn-circulo cir-c" data-valor="C">C</button>
-                            <button class="btn-circulo cir-i" data-valor="I">I</button>
-                            <button class="btn-circulo cir-s" data-valor="S">S</button>
-                            <button class="btn-circulo cir-none" data-valor="-">-</button>
-                        </div>
-                    </tbody>
+                    </tbody> 
 
-                </table>
+                </table> -->
+                <div id="menu-raci" class="section-curculo">
+                    <button class="btn-circulo cir-r" data-valor="R">R</button>
+                    <button class="btn-circulo cir-a" data-valor="A">A</button>
+                    <button class="btn-circulo cir-c" data-valor="C">C</button>
+                    <button class="btn-circulo cir-i" data-valor="I">I</button>
+                    <button class="btn-circulo cir-s" data-valor="S">S</button>
+                    <button class="btn-circulo cir-none" data-valor="-">-</button>
+                </div>
 
                 <div id="show_text" class="show_text"></div>
 
@@ -152,7 +153,7 @@
         </section>
 
     </main>
-    <script src="code.js"></script>
+    <script src="renderer.js"></script>
 </body>
 </html>
 

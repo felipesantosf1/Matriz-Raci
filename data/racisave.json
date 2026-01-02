@@ -1,0 +1,23 @@
+{
+    "setores" : [
+        {
+            "id": "s1",
+            "nome": "Setor Padrão",
+            "membros": [
+                { "id": "m1", "nome": "Membro" }
+            ],
+            "Tarefas" : [
+                {
+                    "id" : "t1",
+                    "nome" : "Tarefa",
+                    "raci" : {
+                        "m1" : "-"
+                    }
+                }
+            ]
+        }
+
+    ]
+}
+
+
